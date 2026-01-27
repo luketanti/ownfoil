@@ -61,7 +61,7 @@ def verify_settings(section, data):
     elif section == 'shop':
         # Validate HAUTH if provided
         hauth = data.get('hauth', '')
-        if hauth and len(hauth) > 0:
+        if hauth:
             # HAUTH should be a reasonable length (typically 32-64 characters for a secure token)
             # Allow alphanumeric and common special characters
             if len(hauth) < 8:
