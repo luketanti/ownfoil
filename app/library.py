@@ -495,7 +495,10 @@ def generate_library():
         title.update(info_from_titledb)
         
         # Override iconUrl to use local proxy endpoint for caching
-        title['iconUrl'] = f'/api/shop/icon/{title["title_id"]}' if title.get('title_id') else ''
+        if title.get('title_id'):
+            title['iconUrl'] = f'/api/shop/icon/{title["title_id"]}'
+        else:
+            title['iconUrl'] = ''
         
         if title['app_type'] == APP_TYPE_BASE:
             # Get title status from Titles table (already calculated by update_titles)
