@@ -1,6 +1,11 @@
 import unittest
+import sys
+import os
 
-from app.library import _sanitize_component, _format_nsz_command
+# Add app directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app'))
+
+from library import _sanitize_component, _format_nsz_command
 
 
 class LibraryHelperTests(unittest.TestCase):
