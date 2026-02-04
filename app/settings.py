@@ -15,6 +15,26 @@ _settings_cache = None
 _settings_cache_time = 0
 _settings_cache_ttl = 5  # Cache for 5 seconds
 
+def _read_env_bool(key):
+    raw = os.environ.get(key)
+    if raw is None:
+        return None
+    lowered = str(raw).strip().lower()
+    if lowered in ('1', 'true', 'yes', 'on'):
+        return True
+    if lowered in ('0', 'false', 'no', 'off'):
+        return False
+    return None
+
+def _read_env_csv(key):
+    raw = os.environ.get(key)
+    if raw is None:
+        return None
+    raw = str(raw).strip()
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(',') if item.strip()]
+
 def load_keys(key_file=KEYS_FILE):
     valid = False
     try:
@@ -50,6 +70,13 @@ def load_settings(force_reload=False):
             merged.update(settings.get('security', {}))
             settings['security'] = merged
 
+        env_trust = _read_env_bool('OWNFOIL_TRUST_PROXY_HEADERS')
+        if env_trust is not None:
+            settings['security']['trust_proxy_headers'] = env_trust
+        env_proxies = _read_env_csv('OWNFOIL_TRUSTED_PROXIES')
+        if env_proxies is not None:
+            settings['security']['trusted_proxies'] = env_proxies
+
         if 'downloads' not in settings:
             settings['downloads'] = DEFAULT_SETTINGS.get('downloads', {})
         else:
@@ -71,6 +98,12 @@ def load_settings(force_reload=False):
 
     else:
         settings = DEFAULT_SETTINGS
+        env_trust = _read_env_bool('OWNFOIL_TRUST_PROXY_HEADERS')
+        if env_trust is not None:
+            settings['security']['trust_proxy_headers'] = env_trust
+        env_proxies = _read_env_csv('OWNFOIL_TRUSTED_PROXIES')
+        if env_proxies is not None:
+            settings['security']['trusted_proxies'] = env_proxies
         with open(CONFIG_FILE, 'w') as yaml_file:
             yaml.dump(settings, yaml_file)
     

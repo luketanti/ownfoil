@@ -78,6 +78,9 @@ This is usefull if you don't want to remember the `docker run` command and have 
 - `PUID` / `PGID`: control the user ID/group ID inside the container (default `1000:1000`).
 - `USER_ADMIN_NAME` / `USER_ADMIN_PASSWORD`: create or update an admin user at startup (default: unset).
 - `USER_GUEST_NAME` / `USER_GUEST_PASSWORD`: create or update a regular user at startup (default: unset).
+- `OWNFOIL_SECRET_KEY`: Flask secret key used for sessions/cookies. Recommended to set a long random value in production (default: auto-generated at startup).
+- `OWNFOIL_TRUST_PROXY_HEADERS`: enable trusting `X-Forwarded-For` when the proxy is in the trusted list (`true`/`false`, default: `false`).
+- `OWNFOIL_TRUSTED_PROXIES`: comma-separated proxy IPs/CIDRs (default: empty), for example `172.16.0.0/12,192.168.0.0/16`.
 - `SHOP_SECTIONS_CACHE_TTL_S`: cache TTL for `/api/shop/sections` (seconds). Use `none`/unset for rebuild-only (default), `0` to disable caching. Recommended: `none` for stable libraries, or `600`-`900` for periodic refresh.
 - `MEDIA_INDEX_TTL_S`: cache TTL for icon/banner media index (seconds). Use `none`/unset for rebuild-only (default), `0` to disable caching. Recommended: `none` or `600`-`900`.
 
@@ -176,6 +179,8 @@ Encryption uses the Tinfoil public key and AES, and requires the `pycryptodome` 
 
 ## Reverse proxy: real client IP (Activity page)
 If you run Ownfoil behind a reverse proxy (e.g. Nginx Proxy Manager), Ownfoil will only trust `X-Forwarded-For` when explicitly configured.
+
+You can set this via `settings.yaml` or with environment variables (`OWNFOIL_TRUST_PROXY_HEADERS` and `OWNFOIL_TRUSTED_PROXIES`).
 
 In `config/settings.json`:
 ```json
