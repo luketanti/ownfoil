@@ -66,7 +66,8 @@ DEFAULT_SETTINGS = {
         "prowlarr": {
             "url": "",
             "api_key": "",
-            "indexer_ids": []
+            "indexer_ids": [],
+            "categories": []
         },
         "torrent_client": {
             "type": "qbittorrent",

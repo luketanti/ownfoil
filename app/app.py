@@ -1764,7 +1764,11 @@ def request_prowlarr_search_api():
 
     try:
         client = ProwlarrClient(prowlarr_cfg['url'], prowlarr_cfg['api_key'])
-        results = client.search(full_query, indexer_ids=prowlarr_cfg.get('indexer_ids') or [])
+        results = client.search(
+            full_query,
+            indexer_ids=prowlarr_cfg.get('indexer_ids') or [],
+            categories=prowlarr_cfg.get('categories') or [],
+        )
         trimmed = [
             {
                 'title': r.get('title'),
@@ -2333,7 +2337,11 @@ def downloads_search():
             if suffix and not full_query.lower().endswith(suffix.lower()):
                 full_query = f"{full_query} {suffix}".strip()
         client = ProwlarrClient(prowlarr_cfg['url'], prowlarr_cfg['api_key'])
-        results = client.search(full_query, indexer_ids=prowlarr_cfg.get('indexer_ids') or [])
+        results = client.search(
+            full_query,
+            indexer_ids=prowlarr_cfg.get('indexer_ids') or [],
+            categories=prowlarr_cfg.get('categories') or [],
+        )
         if apply_settings:
             required_terms = [t.lower() for t in (downloads.get('required_terms') or []) if t]
             blacklist_terms = [t.lower() for t in (downloads.get('blacklist_terms') or []) if t]

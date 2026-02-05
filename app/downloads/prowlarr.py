@@ -33,10 +33,22 @@ class ProwlarrClient:
     def list_indexers(self):
         return self._get("/api/v1/indexer")
 
-    def search(self, query, indexer_ids=None, limit=None):
+    def search(self, query, indexer_ids=None, categories=None, limit=None):
         params = {"query": query}
         if indexer_ids:
             params["indexerIds"] = ",".join(str(i) for i in indexer_ids)
+        if categories:
+            normalized = []
+            for item in categories:
+                if isinstance(item, int):
+                    normalized.append(str(item))
+                    continue
+                if isinstance(item, str):
+                    value = item.strip()
+                    if value.isdigit():
+                        normalized.append(value)
+            if normalized:
+                params["categories"] = ",".join(normalized)
         results = self._get("/api/v1/search", params=params)
         normalized = [_normalize_result(item) for item in results or []]
         if limit:

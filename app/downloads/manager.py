@@ -102,6 +102,7 @@ def _process_downloads(downloads, scan_cb=None, post_cb=None):
 
     client = ProwlarrClient(prowlarr_cfg["url"], prowlarr_cfg["api_key"])
     indexer_ids = prowlarr_cfg.get("indexer_ids") or []
+    categories = prowlarr_cfg.get("categories") or []
     required_terms = downloads.get("required_terms") or []
     blacklist_terms = downloads.get("blacklist_terms") or []
     min_seeders = int(downloads.get("min_seeders") or 0)
@@ -112,6 +113,7 @@ def _process_downloads(downloads, scan_cb=None, post_cb=None):
             update=update,
             downloads=downloads,
             indexer_ids=indexer_ids,
+            categories=categories,
             required_terms=required_terms,
             blacklist_terms=blacklist_terms,
             min_seeders=min_seeders
@@ -150,6 +152,7 @@ def manual_search_update(title_id, version):
         update=update,
         downloads=downloads,
         indexer_ids=prowlarr_cfg.get("indexer_ids") or [],
+        categories=prowlarr_cfg.get("categories") or [],
         required_terms=downloads.get("required_terms") or [],
         blacklist_terms=downloads.get("blacklist_terms") or [],
         min_seeders=int(downloads.get("min_seeders") or 0),
@@ -182,8 +185,13 @@ def search_update_options(title_id, version, limit=20):
     query_candidates = _build_queries(update)
     client = ProwlarrClient(prowlarr_cfg["url"], prowlarr_cfg["api_key"])
     results = []
+    categories = prowlarr_cfg.get("categories") or []
     for query in query_candidates:
-        results = client.search(query, indexer_ids=prowlarr_cfg.get("indexer_ids") or [])
+        results = client.search(
+            query,
+            indexer_ids=prowlarr_cfg.get("indexer_ids") or [],
+            categories=categories,
+        )
         if results:
             break
     trimmed = [
@@ -232,7 +240,7 @@ def queue_download_url(download_url, expected_name=None, update_only=False, expe
     return False, message
 
 
-def _search_and_queue(client, update, downloads, indexer_ids, required_terms, blacklist_terms, min_seeders, allow_duplicates=True):
+def _search_and_queue(client, update, downloads, indexer_ids, categories, required_terms, blacklist_terms, min_seeders, allow_duplicates=True):
     key = f"{update['title_id']}:{update['version']}"
     if not allow_duplicates and _already_tracked(key):
         return False, "Update is already queued."
@@ -240,7 +248,7 @@ def _search_and_queue(client, update, downloads, indexer_ids, required_terms, bl
     query_candidates = _build_queries(update)
     result = None
     for query in query_candidates:
-        results = client.search(query, indexer_ids=indexer_ids)
+        results = client.search(query, indexer_ids=indexer_ids, categories=categories)
         result = pick_best_result(
             results,
             title_id=update["title_id"],

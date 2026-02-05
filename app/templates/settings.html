@@ -403,6 +403,11 @@
                             <label for="prowlarrIndexerIdsInput" class="form-label">Indexer IDs (comma separated)</label>
                             <input type="text" class="form-control" id="prowlarrIndexerIdsInput" placeholder="1,2,3">
                         </div>
+                        <div class="mb-3">
+                            <label for="prowlarrCategoriesInput" class="form-label">Categories (comma separated)</label>
+                            <input type="text" class="form-control" id="prowlarrCategoriesInput" placeholder="5000,5070">
+                            <div class="form-text">Use numeric category IDs from Prowlarr.</div>
+                        </div>
                         <div class="d-flex align-items-center gap-3">
                             <button type="button" id="testProwlarrBtn" class="btn btn-outline-secondary"
                                 onClick='testProwlarrSettings()'>Test Prowlarr</button>
@@ -821,6 +826,16 @@
         return value.split(',').map(item => parseInt(item.trim(), 10)).filter(id => !isNaN(id));
     }
 
+    function parseProwlarrCategories(value) {
+        if (!value) {
+            return { values: [], invalid: [] };
+        }
+        const tokens = value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+        const invalid = tokens.filter(item => !/^\d+$/.test(item));
+        const values = tokens.filter(item => /^\d+$/.test(item));
+        return { values: values, invalid: invalid };
+    }
+
     function copyPublicKey() {
         const publicKeyInput = document.getElementById('shopPublicKeyInput');
         const publicKey = publicKeyInput.value;
@@ -849,6 +864,12 @@
 
     function submitDownloadSettings() {
         $('#submitDownloadSettingsBtn').prop('disabled', true);
+        const categoriesParsed = parseProwlarrCategories(getInputVal("prowlarrCategoriesInput"));
+        if (categoriesParsed.invalid.length) {
+            alert('Prowlarr categories must be numeric IDs only. Invalid values: ' + categoriesParsed.invalid.join(', '));
+            $('#submitDownloadSettingsBtn').prop('disabled', false);
+            return;
+        }
         data = {
             enabled: getCheckboxStatus("downloadsEnabledCheck"),
             interval_minutes: parseInt(getInputVal("downloadsIntervalInput"), 10),
@@ -860,7 +881,8 @@
             prowlarr: {
                 url: getInputVal("prowlarrUrlInput"),
                 api_key: getInputVal("prowlarrApiKeyInput"),
-                indexer_ids: parseIndexerIds(getInputVal("prowlarrIndexerIdsInput"))
+                indexer_ids: parseIndexerIds(getInputVal("prowlarrIndexerIdsInput")),
+                categories: categoriesParsed.values
             },
             torrent_client: {
                 type: getInputVal("torrentClientTypeSelect"),
@@ -1124,6 +1146,7 @@
             setInputVal("prowlarrUrlInput", prowlarrSettings['url'] || '');
             setInputVal("prowlarrApiKeyInput", prowlarrSettings['api_key'] || '');
             setInputVal("prowlarrIndexerIdsInput", (prowlarrSettings['indexer_ids'] || []).join(', '));
+            setInputVal("prowlarrCategoriesInput", (prowlarrSettings['categories'] || []).join(', '));
 
             torrentSettings = downloadsSettings['torrent_client'] || {};
             setInputVal("torrentClientTypeSelect", torrentSettings['type'] || 'qbittorrent');
