@@ -2,9 +2,9 @@ from flask import Blueprint, render_template, redirect, url_for, request, jsonif
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from db import *
+from app.db import *
 from flask_login import LoginManager
-from settings import load_settings, set_security_settings
+from app.settings import load_settings, set_security_settings
 
 import logging
 import threading

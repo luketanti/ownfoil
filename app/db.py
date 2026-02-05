@@ -14,7 +14,7 @@ import os, sys
 import shutil
 import logging
 import datetime
-from constants import *
+from app.constants import *
 
 # Retrieve main logger
 logger = logging.getLogger('main')

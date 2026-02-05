@@ -7,7 +7,7 @@ import email.utils
 import logging
 import time
 
-from constants import *
+from app.constants import *
 
 
 # Retrieve main logger

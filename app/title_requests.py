@@ -1,6 +1,6 @@
 import logging
 
-from db import db, TitleRequests, Titles
+from app.db import db, TitleRequests, Titles
 
 
 logger = logging.getLogger('main')

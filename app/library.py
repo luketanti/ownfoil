@@ -6,19 +6,19 @@ import subprocess
 import sys
 import threading
 import time
-from constants import *
-from db import *
-import titles as titles_lib
+from app.constants import *
+from app.db import *
+from app import titles as titles_lib
 import datetime
 from pathlib import Path
-from utils import *
+from app.utils import *
 
 _organize_lock = threading.Lock()
 _pending_organize_paths = set()
 
 def add_library_complete(app, watcher, path):
     """Add a library to settings, database, and watchdog"""
-    from settings import add_library_path_to_settings
+    from app.settings import add_library_path_to_settings
     
     with app.app_context():
         # Add to settings
@@ -37,7 +37,7 @@ def add_library_complete(app, watcher, path):
 
 def remove_library_complete(app, watcher, path):
     """Remove a library from settings, database, and watchdog with proper cleanup"""
-    from settings import delete_library_path_from_settings
+    from app.settings import delete_library_path_from_settings
     
     with app.app_context():
         # Remove from watchdog first

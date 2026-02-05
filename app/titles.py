@@ -4,10 +4,10 @@ import re
 import json
 import requests
 
-import titledb
-from constants import *
-from utils import *
-from settings import *
+from app import titledb
+from app.constants import *
+from app.utils import *
+from app.settings import *
 from pathlib import Path
 from binascii import hexlify as hx, unhexlify as uhx
 import logging

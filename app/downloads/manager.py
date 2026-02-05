@@ -6,13 +6,13 @@ import threading
 import time
 import unicodedata
 
-from constants import APP_TYPE_UPD
-from db import get_all_titles, get_all_title_apps, get_libraries_path
-from library import _ensure_unique_path, enqueue_organize_paths, _sanitize_component
-import titles as titles_lib
-from settings import load_settings
-from downloads.prowlarr import ProwlarrClient, pick_best_result
-from downloads.torrent_client import add_torrent, list_completed, remove_torrent
+from app.constants import APP_TYPE_UPD
+from app.db import get_all_titles, get_all_title_apps, get_libraries_path
+from app.library import _ensure_unique_path, enqueue_organize_paths, _sanitize_component
+from app import titles as titles_lib
+from app.settings import load_settings
+from app.downloads.prowlarr import ProwlarrClient, pick_best_result
+from app.downloads.torrent_client import add_torrent, list_completed, remove_torrent
 
 logger = logging.getLogger("downloads.manager")
 

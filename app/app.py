@@ -1,34 +1,40 @@
+import os
+import sys
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(APP_DIR)
+if PROJECT_DIR not in sys.path:
+    sys.path.insert(0, PROJECT_DIR)
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, Response, has_app_context, has_request_context, g
 from flask_login import LoginManager
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
-from scheduler import init_scheduler
+from app.scheduler import init_scheduler
 from functools import wraps
-from file_watcher import Watcher
+from app.file_watcher import Watcher
 import threading
 import logging
-import sys
 import copy
 import flask.cli
 from datetime import timedelta, datetime
 flask.cli.show_server_banner = lambda *args: None
-from constants import *
-from settings import *
-from downloads import ProwlarrClient, test_torrent_client, run_downloads_job, manual_search_update, queue_download_url, search_update_options, check_completed_downloads, get_downloads_state
-from library import organize_library, delete_older_updates
-from db import *
-from shop import *
-from auth import *
-from auth import _effective_client_ip
-import titles
-from utils import *
-from library import *
-from library import _get_nsz_exe, _ensure_unique_path
-import titledb
-from title_requests import create_title_request, list_requests
+from app.constants import *
+from app.settings import *
+from app.downloads import ProwlarrClient, test_torrent_client, run_downloads_job, manual_search_update, queue_download_url, search_update_options, check_completed_downloads, get_downloads_state
+from app.library import organize_library, delete_older_updates
+from app.db import *
+from app.shop import *
+from app.auth import *
+from app.auth import _effective_client_ip
+from app import titles
+from app.utils import *
+from app.library import *
+from app.library import _get_nsz_exe, _ensure_unique_path
+from app import titledb
+from app.title_requests import create_title_request, list_requests
 import requests
-import os
 import re
 import threading
 import time
@@ -36,7 +42,7 @@ import uuid
 import re
 import secrets
 
-from db import add_access_event, get_access_events
+from app.db import add_access_event, get_access_events
 
 try:
     from PIL import Image, ImageOps

@@ -1,5 +1,5 @@
-from constants import *
-from utils import *
+from app.constants import *
+from app.utils import *
 import time, os
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
