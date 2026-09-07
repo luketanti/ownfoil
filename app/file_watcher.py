@@ -74,6 +74,7 @@ class Handler(FileSystemEventHandler):
         self._raw_callback = callback  # Callback to invoke for stable files
         self.directories = []
         self.stability_duration = stability_duration  # Stability duration in seconds
+        self._tracked_files_lock = threading.Lock()
         self.tracked_files = {}  # Tracks files being copied
         self.debounced_check_final = self._debounce(self._check_file_stability, stability_duration)
         # Deleted events are coalesced into one callback per burst so a mass
@@ -108,14 +109,25 @@ class Handler(FileSystemEventHandler):
             file_path = event.dest_path
         else:
             file_path = event.src_path
-        current_size = os.path.getsize(file_path)
-        if file_path not in self.tracked_files:
+        with self._tracked_files_lock:
+            if event.type == 'moved':
+                self.tracked_files.pop(event.src_path, None)
+            current_size = self._file_size(file_path)
+            if current_size is None:
+                self.tracked_files.pop(file_path, None)
+                return
             event.size = current_size
             event.timestamp = time.time()
             self.tracked_files[file_path] = event
-        else:
-            self.tracked_files[file_path].size = current_size
-            self.tracked_files[file_path].timestamp = time.time()
+
+    def _file_size(self, file_path):
+        try:
+            return os.path.getsize(file_path)
+        except FileNotFoundError:
+            logger.debug('Ignoring stale watcher path: %s', file_path)
+        except OSError:
+            logger.warning('Unable to stat watcher path: %s', file_path, exc_info=True)
+        return None
 
     def _flush_deleted_events(self):
         """Dispatch every buffered deleted event as a single batch."""
@@ -130,23 +142,32 @@ class Handler(FileSystemEventHandler):
         now = time.time()
         stable_files = []
 
-        # Check all tracked files
-        for file_path, file_data in list(self.tracked_files.items()):
-            if not os.path.exists(file_path):
-                # If the file no longer exists, stop tracking it
-                del self.tracked_files[file_path]
-                continue
-            current_size = os.path.getsize(file_path)
-            if current_size == file_data.size and (now - file_data.timestamp) >= self.stability_duration:
-                stable_files.append(file_data)
-                del self.tracked_files[file_path]  # Stop tracking stable file
+        # Event dispatch and the debounced timer can run concurrently.
+        with self._tracked_files_lock:
+            for file_path, file_data in list(self.tracked_files.items()):
+                current_size = self._file_size(file_path)
+                if current_size is None:
+                    self.tracked_files.pop(file_path, None)
+                    continue
+                if current_size != file_data.size:
+                    file_data.size = current_size
+                    file_data.timestamp = now
+                elif (now - file_data.timestamp) >= self.stability_duration:
+                    stable_files.append(file_data)
+                    self.tracked_files.pop(file_path, None)
+            pending = bool(self.tracked_files)
 
-        # Trigger the callback for all stable files
+        # A final write may arrive before the file has stabilized. Keep checking
+        # even if no further filesystem events arrive.
+        if pending:
+            self.debounced_check_final()
         if stable_files:
             self._raw_callback(stable_files)
 
     def collect_event(self, source_event, directory):
         """Track file events and trigger the stability check."""
+        if source_event.event_type not in ('created', 'modified', 'moved', 'deleted'):
+            return
         if source_event.is_directory:
             return
 
@@ -181,5 +202,8 @@ class Handler(FileSystemEventHandler):
     def on_any_event(self, event):
         for directory in self.directories:
             if event.src_path.startswith(directory):
-                self.collect_event(event, directory)
+                try:
+                    self.collect_event(event, directory)
+                except Exception:
+                    logger.exception('Failed to process library filesystem event: %s', event)
                 break

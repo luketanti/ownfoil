@@ -407,6 +407,7 @@
 </div>
 {% endif %}
 
+<script src="{{ url_for('static', filename='library-images.js', v=static_asset_version) }}"></script>
 <script>
     let games;
     let filteredGames;
@@ -660,10 +661,11 @@
     }
 
     function showLoadingPlaceholders() {
+        libraryImages.reset();
         const gameGrid = $('#gameGrid');
         gameGrid.empty();
 
-        const count = Math.max(parseInt(itemsPerPage || 0, 10), 1);
+        const count = Math.min(24, Math.max(parseInt(itemsPerPage || 0, 10), 1));
 
         if (currentView === 'list') {
             const table = $(`
@@ -751,6 +753,7 @@
     }
 
     function renderGames() {
+        libraryImages.reset();
         renderDiscoverySections();
         applyCardSizeLimits();
         $('#libraryResultsSummary').text(`${totalGames.toLocaleString()} title${totalGames === 1 ? '' : 's'}`);
@@ -764,6 +767,9 @@
         } else if (currentView === 'list') {
             renderListView();
         }
+
+        libraryImages.observe(document.getElementById('gameGrid'));
+        libraryImages.observe(document.getElementById('discoverSection'));
 
         // init version tooltips
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
@@ -980,7 +986,7 @@
             const genre = escapeHtml(getPrimaryGenre(game));
             btn.innerHTML = `
                 <div class="discover-tile-body">
-                    <img class="discover-tile-img" src="${iconSrc}" alt="" loading="lazy" decoding="async">
+                    <img class="discover-tile-img" src="/static/placeholder-icon.svg" data-library-src="${escapeHtml(iconSrc)}" alt="" loading="lazy" decoding="async">
                     <div class="discover-tile-title">${title}</div>
                     <div class="discover-tile-subtitle">${genre}</div>
                 </div>
@@ -994,7 +1000,10 @@
                         this.src = directIconSrc;
                         return;
                     }
-                    this.src = '/static/placeholder-icon.svg';
+                    if (!this.dataset.placeholderFailed) {
+                        this.dataset.placeholderFailed = '1';
+                        this.src = '/static/placeholder-icon.svg';
+                    }
                 });
             }
 
@@ -1137,6 +1146,7 @@
         // Current page games already provided by the server.
         paginatedGames = Array.isArray(filteredGames) ? filteredGames : [];
 
+        const fragment = document.createDocumentFragment();
         paginatedGames.forEach(function (game) {
             const gameCol = $('<div class="col game-col"></div>').addClass(`col-${12 / getColumnsForCardSize(cardSize)}`);
 
@@ -1148,7 +1158,8 @@
             const img = $('<img class="card-img"></img>')
                 .attr('loading', 'lazy')
                 .attr('decoding', 'async')
-                .attr('src', cacheBannerSrc || bannerFallback);
+                .attr('src', bannerFallback)
+                .attr('data-library-src', cacheBannerSrc || bannerFallback);
             img.on('error', function () {
                 if (!this.dataset.triedFallback) {
                     this.dataset.triedFallback = '1';
@@ -1210,8 +1221,9 @@
             cardOverlay.append(tagsContainer);
             card.append(cardOverlay);
             gameCol.append(card);
-            gameGrid.append(gameCol);
+            fragment.appendChild(gameCol[0]);
         });
+        gameGrid.append(fragment);
         // Update pagination
         updatePaginationControls(totalGames)
 
@@ -1224,6 +1236,7 @@
         gameGrid.empty(); // Clear existing games
         paginatedGames = Array.isArray(filteredGames) ? filteredGames : [];
 
+        const fragment = document.createDocumentFragment();
         paginatedGames.forEach(game => {
             const iconBtn = $('<button type="button" class="btn btn-link p-0 game-icon-btn library-icon-tile text-start"></button>')
                 .attr('data-bs-toggle', 'modal')
@@ -1241,7 +1254,7 @@
 
             iconBtn.html(`
                 <div class="discover-tile-body">
-                    <img class="library-icon-img" src="${cacheIconSrc || iconFallback}" alt="" loading="lazy" decoding="async">
+                    <img class="library-icon-img" src="${iconFallback}" data-library-src="${cacheIconSrc || iconFallback}" alt="" loading="lazy" decoding="async">
                     <div class="discover-tile-title" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="${title}">${title}</div>
                     <div class="discover-tile-subtitle">${genre}</div>
                 </div>
@@ -1258,9 +1271,10 @@
             item.attr('data-library-initial', getLibraryTitleInitial(fullTitle));
             item.append(iconBtn);
 
-            gameGrid.append(item);
+            fragment.appendChild(item[0]);
         });
 
+        gameGrid.append(fragment);
         // Adjust icon sizes based on the slider value
         adjustIconSizes(cardSize);
         // Update pagination

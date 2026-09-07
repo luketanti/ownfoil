@@ -131,189 +131,191 @@
                     <ul class="pagination justify-content-center" id="usersPagination"></ul>
                 </nav>
 
-                <!-- Delete User Modal -->
-                <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="deleteUserModalLabel">Delete user</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">...</div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Delete</button>
-                            </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Keep dialogs outside the page stacking context, above the modal backdrop. -->
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="deleteUserModalLabel">Delete user</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">...</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="editUserModalLabel">Modify user</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="editUserNameInput" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="editUserNameInput">
+                    <div id="editUserNameFeedback" class="invalid-feedback">Username is required.</div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Permissions</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkboxEditUserShopAccess">
+                            <label class="form-check-label" for="checkboxEditUserShopAccess">Shop</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkboxEditUserBackupAccess">
+                            <label class="form-check-label" for="checkboxEditUserBackupAccess">Backup</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkboxEditUserCheatAccess">
+                            <label class="form-check-label" for="checkboxEditUserCheatAccess">Cheats</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkboxEditUserAdminAccess">
+                            <label class="form-check-label" for="checkboxEditUserAdminAccess">Admin</label>
                         </div>
                     </div>
                 </div>
+                <div class="mb-3">
+                    <label for="editUserMaxRatingSelect" class="form-label">Max rating</label>
+                    <select class="form-select" id="editUserMaxRatingSelect">
+                        <option value="">No limit</option>
+                        <option value="0">Everyone (E)</option>
+                        <option value="10">Everyone 10+ (E10+)</option>
+                        <option value="13">Teen (T)</option>
+                        <option value="17">Mature 17+ (M)</option>
+                        <option value="18">Adults Only 18+ (AO)</option>
+                    </select>
+                    <div class="form-text">Hide titles above this ESRB rating from this user's shop.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="submitModifyUserBtn" class="btn btn-primary" onClick='submitModifyUser()'>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <!-- Edit User Modal -->
-                <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="editUserModalLabel">Modify user</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="editUserNameInput" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="editUserNameInput">
-                                    <div id="editUserNameFeedback" class="invalid-feedback">Username is required.</div>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Permissions</label>
-                                    <div class="d-flex flex-wrap gap-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="checkboxEditUserShopAccess">
-                                            <label class="form-check-label" for="checkboxEditUserShopAccess">Shop</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="checkboxEditUserBackupAccess">
-                                            <label class="form-check-label" for="checkboxEditUserBackupAccess">Backup</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="checkboxEditUserCheatAccess">
-                                            <label class="form-check-label" for="checkboxEditUserCheatAccess">Cheats</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="checkboxEditUserAdminAccess">
-                                            <label class="form-check-label" for="checkboxEditUserAdminAccess">Admin</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editUserMaxRatingSelect" class="form-label">Max rating</label>
-                                    <select class="form-select" id="editUserMaxRatingSelect">
-                                        <option value="">No limit</option>
-                                        <option value="0">Everyone (E)</option>
-                                        <option value="10">Everyone 10+ (E10+)</option>
-                                        <option value="13">Teen (T)</option>
-                                        <option value="17">Mature 17+ (M)</option>
-                                        <option value="18">Adults Only 18+ (AO)</option>
-                                    </select>
-                                    <div class="form-text">Hide titles above this ESRB rating from this user's shop.</div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" id="submitModifyUserBtn" class="btn btn-primary" onClick='submitModifyUser()'>Save</button>
-                            </div>
-                        </div>
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="resetPasswordModalLabel">Reset password</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="resetPasswordInput" class="form-label">New password</label>
+                    <input type="password" class="form-control" id="resetPasswordInput">
+                    <div id="resetPasswordFeedback" class="invalid-feedback">Password is required.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="resetPasswordConfirmInput" class="form-label">Confirm password</label>
+                    <input type="password" class="form-control" id="resetPasswordConfirmInput">
+                    <div id="resetPasswordConfirmFeedback" class="invalid-feedback">Passwords must match.</div>
+                </div>
+                <div class="mb-2">
+                    <label for="generatedPasswordInput" class="form-label">Generated password</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="generatedPasswordInput" readonly>
+                        <button type="button" class="btn btn-outline-secondary" id="copyGeneratedPasswordBtn">Copy</button>
+                        <button type="button" class="btn btn-outline-primary" id="generatePasswordBtn">Generate</button>
+                    </div>
+                    <div id="generatedPasswordHelp" class="form-text">Generate a strong password and copy it.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="submitResetPasswordBtn" class="btn btn-primary" onClick='submitResetPassword()'>Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Freeze User Modal -->
+<div class="modal fade" id="freezeUserModal" tabindex="-1" aria-labelledby="freezeUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="freezeUserModalLabel">Freeze account</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-2">Frozen accounts remain visible, but cannot access the library. When they connect, they only receive the MOTD message below.</p>
+                <div class="mb-3">
+                    <label for="freezeMessageInput" class="form-label">MOTD message</label>
+                    <textarea class="form-control" id="freezeMessageInput" rows="3" placeholder="Your account is frozen. Contact the admin."></textarea>
+                    <div class="form-text">Shown to this user when they try to access the shop.</div>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="freezeEnabledCheck" checked>
+                    <label class="form-check-label" for="freezeEnabledCheck">Freeze this account</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="submitFreezeBtn" class="btn btn-warning" onClick='submitFreezeUser()'>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userHistoryModal" tabindex="-1" aria-labelledby="userHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h1 class="modal-title fs-5" id="userHistoryModalLabel">User history</h1>
+                    <div class="text-muted small" id="userHistorySummaryText">Loading history...</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                    <div class="text-muted small">Recent completed transfer events for this account.</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="userHistoryLimitSelect" class="form-label mb-0 small text-muted">Rows</label>
+                        <select class="form-select form-select-sm" id="userHistoryLimitSelect" style="width: 110px;">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                            <option value="250">250</option>
+                        </select>
                     </div>
                 </div>
-
-                <!-- Reset Password Modal -->
-                <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="resetPasswordModalLabel">Reset password</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="resetPasswordInput" class="form-label">New password</label>
-                                    <input type="password" class="form-control" id="resetPasswordInput">
-                                    <div id="resetPasswordFeedback" class="invalid-feedback">Password is required.</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="resetPasswordConfirmInput" class="form-label">Confirm password</label>
-                                    <input type="password" class="form-control" id="resetPasswordConfirmInput">
-                                    <div id="resetPasswordConfirmFeedback" class="invalid-feedback">Passwords must match.</div>
-                                </div>
-                                <div class="mb-2">
-                                    <label for="generatedPasswordInput" class="form-label">Generated password</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="generatedPasswordInput" readonly>
-                                        <button type="button" class="btn btn-outline-secondary" id="copyGeneratedPasswordBtn">Copy</button>
-                                        <button type="button" class="btn btn-outline-primary" id="generatePasswordBtn">Generate</button>
-                                    </div>
-                                    <div id="generatedPasswordHelp" class="form-text">Generate a strong password and copy it.</div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" id="submitResetPasswordBtn" class="btn btn-primary" onClick='submitResetPassword()'>Reset</button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle users-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Title</th>
+                                <th>File</th>
+                                <th>IP</th>
+                                <th>Status</th>
+                                <th>Sent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userHistoryTableBody">
+                            <tr><td colspan="6" class="text-muted">Loading history...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-
-                <!-- Freeze User Modal -->
-                <div class="modal fade" id="freezeUserModal" tabindex="-1" aria-labelledby="freezeUserModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="freezeUserModalLabel">Freeze account</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="text-muted mb-2">Frozen accounts remain visible, but cannot access the library. When they connect, they only receive the MOTD message below.</p>
-                                <div class="mb-3">
-                                    <label for="freezeMessageInput" class="form-label">MOTD message</label>
-                                    <textarea class="form-control" id="freezeMessageInput" rows="3" placeholder="Your account is frozen. Contact the admin."></textarea>
-                                    <div class="form-text">Shown to this user when they try to access the shop.</div>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="freezeEnabledCheck" checked>
-                                    <label class="form-check-label" for="freezeEnabledCheck">Freeze this account</label>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" id="submitFreezeBtn" class="btn btn-warning" onClick='submitFreezeUser()'>Save</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal fade" id="userHistoryModal" tabindex="-1" aria-labelledby="userHistoryModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <div>
-                                    <h1 class="modal-title fs-5" id="userHistoryModalLabel">User history</h1>
-                                    <div class="text-muted small" id="userHistorySummaryText">Loading history...</div>
-                                </div>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-                                    <div class="text-muted small">Recent completed transfer events for this account.</div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label for="userHistoryLimitSelect" class="form-label mb-0 small text-muted">Rows</label>
-                                        <select class="form-select form-select-sm" id="userHistoryLimitSelect" style="width: 110px;">
-                                            <option value="25">25</option>
-                                            <option value="50" selected>50</option>
-                                            <option value="100">100</option>
-                                            <option value="250">250</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-striped align-middle users-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>When</th>
-                                                <th>Title</th>
-                                                <th>File</th>
-                                                <th>IP</th>
-                                                <th>Status</th>
-                                                <th>Sent</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="userHistoryTableBody">
-                                            <tr><td colspan="6" class="text-muted">Loading history...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>

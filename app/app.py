@@ -7958,11 +7958,15 @@ def _run_post_library_change():
                 payload = _build_shop_sections_payload(50)
                 _store_shop_sections_cache(payload, 50, now, state_token, persist_disk=True)
         finally:
-            titles.release_titledb()
-            _release_process_memory()
-            with library_rebuild_lock:
-                library_rebuild_status['in_progress'] = False
-                library_rebuild_status['updated_at'] = time.time()
+            try:
+                titles.release_titledb()
+            finally:
+                try:
+                    _release_process_memory()
+                finally:
+                    with library_rebuild_lock:
+                        library_rebuild_status['in_progress'] = False
+                        library_rebuild_status['updated_at'] = time.time()
 
 @debounce(10)
 def post_library_change():
@@ -7985,8 +7989,8 @@ def scan_library_api():
         if scan_in_progress:
             logger.info('Skipping scan_library_api call: Scan already in progress')
             return {'success': False, 'errors': []}
-    # Set the scan status to in progress
-    scan_in_progress = True
+        # Claim the scan while holding the lock.
+        scan_in_progress = True
 
     try:
         if path is None:
@@ -7994,7 +7998,7 @@ def scan_library_api():
         else:
             scan_library_path(path)
     except Exception as e:
-        errors.append(e)
+        errors.append(str(e))
         success = False
         logger.error(f"Error during library scan: {e}")
     finally:
