@@ -38,5 +38,15 @@ class UsersTemplateTests(unittest.TestCase):
                 self.assertEqual(parents, [], 'Modal must be at content-block root')
 
 
+    def test_settings_modals_are_outside_page_and_hidden_sections(self):
+        template = Path(__file__).resolve().parents[1] / 'app/templates/settings.html'
+        parser = ModalLocationParser()
+        parser.feed(template.read_text(encoding='utf-8'))
+        self.assertEqual(set(parser.modals), {'deletePathModal', 'settingsNoticeModal'})
+        for modal_id, parents in parser.modals.items():
+            with self.subTest(modal=modal_id):
+                self.assertEqual(parents, [], 'Settings dialogs must be at content-block root')
+
+
 if __name__ == '__main__':
     unittest.main()

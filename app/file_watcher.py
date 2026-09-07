@@ -1,6 +1,7 @@
 from app.constants import *
 from app.utils import *
 import threading
+import queue
 import time, os
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
@@ -25,49 +26,70 @@ class Watcher:
             self.observer = Observer()
             logger.info('Watchdog using native observer.')
         self.scheduler_map = {}
+        self._commands = queue.Queue()
+        self._state_lock = threading.Lock()
+        self._stopping = threading.Event()
 
     def run(self):
+        # Only this worker touches Watchdog: schedule() can hold its internal
+        # lock while recursively reading a slow network filesystem.
         self.observer.start()
         logger.debug('Successfully started observer.')
+        try:
+            while not self._stopping.is_set():
+                command = self._commands.get()
+                if command is None:
+                    break
+                action, directory = command
+                started = time.monotonic()
+                try:
+                    if action == 'add':
+                        logger.info('Registering watcher for %s in background; network directory traversal may take time.', directory)
+                        task = self.observer.schedule(self.event_handler, directory, recursive=True)
+                        self.scheduler_map[directory] = task
+                        self.event_handler.add_directory(directory)
+                        logger.info('Watcher registered for %s in %.1f seconds.', directory, time.monotonic() - started)
+                    else:
+                        task = self.scheduler_map.pop(directory, None)
+                        if task is not None:
+                            self.observer.unschedule(task)
+                        self.event_handler.remove_directory(directory)
+                        logger.info('Removed %s from watchdog monitoring.', directory)
+                except Exception:
+                    if action == 'add':
+                        with self._state_lock:
+                            self.directories.discard(directory)
+                    logger.exception('Watcher %s failed for %s after %.1f seconds.', action, directory, time.monotonic() - started)
+        finally:
+            self.observer.stop()
+            self.observer.join()
 
     def stop(self):
-        logger.debug('Stopping observer...')
-        self.observer.stop()
-        self.observer.join()
-        # Best effort: dispatch any deletions still buffered for the debounced
-        # flush so a clean shutdown does not drop them.
+        # Do not wait on Watchdog's lock here: an NFS syscall may be blocked.
+        self._stopping.set()
+        self._commands.put(None)
         try:
             self.event_handler._flush_deleted_events()
         except Exception:
             logger.exception('Failed to flush pending deleted events on stop')
-        logger.debug('Successfully stopped observer.')
 
     def add_directory(self, directory):
-        if directory not in self.directories:
-            if not os.path.exists(directory):
-                logger.warning(f'Directory {directory} does not exist, not added to watchdog.')
+        """Queue registration; True means accepted, not yet actively watched."""
+        with self._state_lock:
+            if self._stopping.is_set() or directory in self.directories:
                 return False
-            logger.info(f'Adding directory {directory} to watchdog.')
-            task = self.observer.schedule(self.event_handler, directory, recursive=True)
-            self.scheduler_map[directory] = task
             self.directories.add(directory)
-            self.event_handler.add_directory(directory)
-            return True
-        return False
-    
+            self._commands.put(('add', directory))
+        logger.info('Queued background watcher registration for %s.', directory)
+        return True
+
     def remove_directory(self, directory):
-        logger.debug(f'Removing {directory} from watchdog monitoring...')
-        if directory in self.directories:
-            if directory in self.scheduler_map:
-                self.observer.unschedule(self.scheduler_map[directory])
-                del self.scheduler_map[directory]
+        with self._state_lock:
+            if self._stopping.is_set() or directory not in self.directories:
+                return False
             self.directories.remove(directory)
-            self.event_handler.remove_directory(directory)
-            logger.info(f'Removed {directory} from watchdog monitoring.')
-            return True
-        else:
-            logger.info(f'{directory} not in watchdog, nothing to do.')
-        return False
+            self._commands.put(('remove', directory))
+        return True
 
 class Handler(FileSystemEventHandler):
     def __init__(self, callback, stability_duration=5, delete_batch_window=2):

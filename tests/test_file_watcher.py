@@ -139,3 +139,62 @@ class FileWatcherRecoveryTests(unittest.TestCase):
                 self.handler.on_any_event(self.event())
             self.handler.on_any_event(self.event())
         self.assertEqual(collect.call_count, 2)
+
+
+class WatcherRegistrationTests(unittest.TestCase):
+    def test_blocked_registration_does_not_block_caller_or_stop(self):
+        import threading
+        from unittest.mock import Mock
+        from app.file_watcher import Watcher
+        entered = threading.Event()
+        release = threading.Event()
+        observer = Mock()
+
+        def schedule(*args, **kwargs):
+            entered.set()
+            if not release.wait(3):
+                raise RuntimeError('test registration timeout')
+            return 'watch'
+
+        observer.schedule.side_effect = schedule
+        with patch('app.file_watcher.Observer', return_value=observer), patch.dict('os.environ', {'WATCHDOG_POLLING': '0'}):
+            watcher = Watcher(lambda events: None)
+        worker = threading.Thread(target=watcher.run, daemon=True)
+        worker.start()
+        try:
+            self.assertTrue(watcher.add_directory('X:/fixture-root'))
+            self.assertTrue(entered.wait(1))
+            self.assertFalse(watcher.add_directory('X:/fixture-root'))
+            self.assertTrue(watcher.remove_directory('X:/fixture-root'))
+            watcher.stop()
+            self.assertFalse(watcher.add_directory('X:/another-fixture'))
+        finally:
+            release.set()
+            watcher.stop()
+            worker.join(2)
+        self.assertFalse(worker.is_alive())
+        observer.stop.assert_called_once()
+
+    def test_registration_failure_allows_retry(self):
+        import threading
+        from unittest.mock import Mock
+        from app.file_watcher import Watcher
+        observer = Mock()
+        observer.schedule.side_effect = [OSError('fixture unavailable'), 'watch']
+        with patch('app.file_watcher.Observer', return_value=observer), patch.dict('os.environ', {'WATCHDOG_POLLING': '0'}):
+            watcher = Watcher(lambda events: None)
+        failed = threading.Event()
+        registered = threading.Event()
+        with patch('app.file_watcher.logger.exception', side_effect=lambda *args: failed.set()), patch.object(watcher.event_handler, 'add_directory', side_effect=lambda path: registered.set()):
+            worker = threading.Thread(target=watcher.run, daemon=True)
+            worker.start()
+            try:
+                watcher.add_directory('X:/fixture-root')
+                self.assertTrue(failed.wait(1))
+                self.assertTrue(watcher.add_directory('X:/fixture-root'))
+                self.assertTrue(registered.wait(1))
+            finally:
+                watcher.stop()
+                worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(observer.schedule.call_count, 2)

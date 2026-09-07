@@ -255,6 +255,46 @@
     }
 </style>
 
+<!-- Keep dialogs outside page stacking contexts and hidden settings sections. -->
+<!-- Delete library path modal -->
+                <div class="modal fade" id="deletePathModal" tabindex="-1" aria-labelledby="deletePathModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="deletePathModalLabel">Delete library path</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Delete</button>
+            </div>
+        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="settingsNoticeModal" tabindex="-1" aria-labelledby="settingsNoticeModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="settingsNoticeModalLabel">Settings notice</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="settingsNoticeModalBody"></div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary d-none" id="settingsNoticeDismissForeverBtn">Do not show again</button>
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 <div class="container-fluid setting-body settings-body">
     <div class="row g-0 settings-shell-row">
         <!-- Sidebar Navigation -->
@@ -590,45 +630,6 @@
                             <div>
                                 <button type="button" id="submitTitlesSettingsBtn" class="btn btn-primary"
                                     onClick='submitTitlesSettings()'>Save title settings</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Delete User Modal -->
-                <div class="modal fade" id="deletePathModal" tabindex="-1" aria-labelledby="deletePathModalLabel"
-                    aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="deletePathModalLabel">Delete library path</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                ...
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal fade" id="settingsNoticeModal" tabindex="-1" aria-labelledby="settingsNoticeModalLabel"
-                    aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="settingsNoticeModalLabel">Settings notice</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body" id="settingsNoticeModalBody"></div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary d-none" id="settingsNoticeDismissForeverBtn">Do not show again</button>
-                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                             </div>
                         </div>
                     </div>

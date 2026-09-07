@@ -61,7 +61,7 @@ body {
     z-index: 3;
 }
 
-body > :not(#appDefaultBackdrop):not(#libraryArtworkBackdrop):not(.library-alphabet-rail):not(.modal):not(.modal-backdrop) {
+body > :not(#appDefaultBackdrop):not(#libraryArtworkBackdrop):not(.library-alphabet-rail):not(.modal):not(.modal-backdrop):not(.tooltip):not(.popover):not(.dropdown-menu):not(.offcanvas):not(.offcanvas-backdrop) {
     position: relative;
     z-index: 2;
 }

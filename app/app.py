@@ -8079,8 +8079,11 @@ if __name__ == '__main__':
         logger.info('Shutting down server...')
         try:
             watcher.stop()
-            watcher_thread.join()
-            logger.debug('Watcher thread terminated.')
+            watcher_thread.join(timeout=5)
+            if watcher_thread.is_alive():
+                logger.warning('Watcher shutdown still waiting for filesystem I/O; continuing shutdown.')
+            else:
+                logger.debug('Watcher thread terminated.')
         except Exception:
             logger.exception('Watcher shutdown failed')
         # Shutdown scheduler
