@@ -522,6 +522,18 @@ def _extract_from_nsp(filepath, modules, preferred_language=None, preferred_regi
             return _decompress_ncz_bytes(raw_data)
         return raw_data
 
+    def _read_nca_header_probe_from_container(filename):
+        # ncz is compressed, so decompression can't be skipped; raw nca entries can be read partially
+        if str(filename).lower().endswith(".ncz"):
+            return _read_nca_or_ncz_from_container(filename)
+        entry = name_to_entry.get(filename)
+        if entry is None:
+            return None
+        abs_offset = header.data_offset + entry.offset
+        with open(filepath, "rb") as handle:
+            handle.seek(abs_offset)
+            return handle.read(min(entry.size, nca_mod.NCA_HEADER_SIZE))
+
     cnmt_nca_data = _read_nca_or_ncz_from_container(cnmt_nca_name)
     if not cnmt_nca_data:
         logger.warning("Local metadata NSP parse: failed to load/decompress CNMT container %s in %s", cnmt_nca_name, filepath)
@@ -547,25 +559,25 @@ def _extract_from_nsp(filepath, modules, preferred_language=None, preferred_regi
     for name in nca_names:
         if name in (cnmt_nca_name, largest_name):
             continue
-        file_data = _read_nca_or_ncz_from_container(name)
-        if not file_data:
+        probe_data = _read_nca_header_probe_from_container(name)
+        if not probe_data:
             continue
         try:
-            nca_header = nca_mod.Nca(file_data)
+            nca_header = nca_mod.NcaHeaderOnly(probe_data[:nca_mod.NCA_HEADER_SIZE])
             if nca_header.content_type == "Control":
-                control_nca_data = file_data
+                control_nca_data = _read_nca_or_ncz_from_container(name)
                 logger.info("Local metadata NSP parse: control NCA found in %s via %s", filepath, name)
                 break
         except Exception:
             continue
 
     if control_nca_data is None and largest_name is not None:
-        fallback_data = _read_nca_or_ncz_from_container(largest_name)
-        if fallback_data:
+        probe_data = _read_nca_header_probe_from_container(largest_name)
+        if probe_data:
             try:
-                nca_header = nca_mod.Nca(fallback_data)
+                nca_header = nca_mod.NcaHeaderOnly(probe_data[:nca_mod.NCA_HEADER_SIZE])
                 if nca_header.content_type == "Control":
-                    control_nca_data = fallback_data
+                    control_nca_data = _read_nca_or_ncz_from_container(largest_name)
                     logger.info("Local metadata NSP parse: control NCA fallback hit in %s via %s", filepath, largest_name)
             except Exception:
                 pass
@@ -678,6 +690,17 @@ def _extract_from_xci(filepath, modules, preferred_language=None, preferred_regi
             return _decompress_ncz_bytes(raw)
         return raw
 
+    def _read_nca_header_probe_from_secure(name):
+        # ncz is compressed, so decompression can't be skipped; raw nca entries can be read partially
+        if str(name).lower().endswith(".ncz"):
+            return _read_nca_or_ncz_from_secure(name)
+        idx = name_to_index[name]
+        entry = secure_ctx.get_entry(idx)
+        abs_offset = secure_offset + secure_ctx.header_size + entry.offset
+        with open(filepath, "rb") as handle:
+            handle.seek(abs_offset)
+            return handle.read(min(entry.size, nca_mod.NCA_HEADER_SIZE))
+
     cnmt_nca_data = _read_nca_or_ncz_from_secure(cnmt_nca_name)
     if not cnmt_nca_data:
         logger.warning("Local metadata XCI parse: failed to load/decompress CNMT container %s in %s", cnmt_nca_name, filepath)
@@ -703,25 +726,25 @@ def _extract_from_xci(filepath, modules, preferred_language=None, preferred_regi
     for name in name_to_index:
         if name in (cnmt_nca_name, largest_name):
             continue
-        file_data = _read_nca_or_ncz_from_secure(name)
-        if not file_data:
+        probe_data = _read_nca_header_probe_from_secure(name)
+        if not probe_data:
             continue
         try:
-            nca_header = nca_mod.Nca(file_data)
+            nca_header = nca_mod.NcaHeaderOnly(probe_data[:nca_mod.NCA_HEADER_SIZE])
             if nca_header.content_type == "Control":
-                control_nca_data = file_data
+                control_nca_data = _read_nca_or_ncz_from_secure(name)
                 logger.info("Local metadata XCI parse: control NCA found in %s via %s", filepath, name)
                 break
         except Exception:
             continue
 
     if control_nca_data is None and largest_name is not None:
-        file_data = _read_nca_or_ncz_from_secure(largest_name)
-        if file_data:
+        probe_data = _read_nca_header_probe_from_secure(largest_name)
+        if probe_data:
             try:
-                nca_header = nca_mod.Nca(file_data)
+                nca_header = nca_mod.NcaHeaderOnly(probe_data[:nca_mod.NCA_HEADER_SIZE])
                 if nca_header.content_type == "Control":
-                    control_nca_data = file_data
+                    control_nca_data = _read_nca_or_ncz_from_secure(largest_name)
                     logger.info("Local metadata XCI parse: control NCA fallback hit in %s via %s", filepath, largest_name)
             except Exception:
                 pass
