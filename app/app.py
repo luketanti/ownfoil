@@ -506,6 +506,8 @@ titles_metadata_cache = {
 }
 titles_total_cache_lock = threading.Lock()
 titles_total_cache = {}
+titles_sorted_cache_lock = threading.Lock()
+titles_sorted_cache = {}
 library_size_cache_lock = threading.Lock()
 library_size_cache = {
     'state_token': None,
@@ -755,6 +757,46 @@ def _store_titles_total(cache_key, total):
             titles_total_cache.clear()
             for key, value in ordered:
                 titles_total_cache[key] = value
+
+
+# Name-sort ordering for /api/titles used to re-run the full unpaginated scan +
+# a titledb lookup per row + a Python sort on every single page/search/filter
+# request. Cache the sorted app_pk order the same way `total` above is already
+# cached (same key, same TTL knob) - a page fetch then only needs to look up
+# the titledb metadata for the rows actually being returned.
+def _get_cached_titles_sorted(cache_key):
+    if TITLES_TOTAL_CACHE_TTL_S == 0:
+        return None
+    now = time.time()
+    with titles_sorted_cache_lock:
+        cached = titles_sorted_cache.get(cache_key)
+        if not isinstance(cached, dict):
+            return None
+        if TITLES_TOTAL_CACHE_TTL_S is not None:
+            age = now - float(cached.get('timestamp') or 0.0)
+            if age > float(TITLES_TOTAL_CACHE_TTL_S):
+                titles_sorted_cache.pop(cache_key, None)
+                return None
+        return list(cached.get('order') or [])
+
+
+def _store_titles_sorted(cache_key, order):
+    if TITLES_TOTAL_CACHE_TTL_S == 0:
+        return
+    with titles_sorted_cache_lock:
+        titles_sorted_cache[cache_key] = {
+            'order': list(order),
+            'timestamp': time.time(),
+        }
+        if len(titles_sorted_cache) > TITLES_TOTAL_CACHE_MAX_ENTRIES:
+            ordered = sorted(
+                titles_sorted_cache.items(),
+                key=lambda kv: float((kv[1] or {}).get('timestamp') or 0.0),
+                reverse=True,
+            )[:TITLES_TOTAL_CACHE_MAX_ENTRIES]
+            titles_sorted_cache.clear()
+            for key, value in ordered:
+                titles_sorted_cache[key] = value
 
 def _build_enriched_shop_files():
     """Build the shop file list annotated with each file's ESRB rating.
@@ -6552,34 +6594,46 @@ def get_all_titles_api():
     info_cache = {}
     release_dates_by_title = {}
     if use_name_sort:
-        rows_for_sort = query.order_by(None).all()
-        total = len(rows_for_sort)
-        all_lookup_ids.update([row.title_id for row in rows_for_sort if row.title_id])
-        all_lookup_ids.update([row.app_id for row in rows_for_sort if row.app_type == APP_TYPE_DLC and row.app_id])
+        ordered_pks = _get_cached_titles_sorted(count_cache_key)
+        if ordered_pks is None:
+            rows_for_sort = query.order_by(None).all()
+            all_lookup_ids.update([row.title_id for row in rows_for_sort if row.title_id])
+            all_lookup_ids.update([row.app_id for row in rows_for_sort if row.app_type == APP_TYPE_DLC and row.app_id])
 
-        with titles.titledb_session() as titledb_loaded:
-            if titledb_loaded:
-                for lookup_id in all_lookup_ids:
-                    info_cache[lookup_id] = titles.get_game_info(lookup_id) or {}
+            with titles.titledb_session() as titledb_loaded:
+                if titledb_loaded:
+                    for lookup_id in all_lookup_ids:
+                        info_cache[lookup_id] = titles.get_game_info(lookup_id) or {}
 
-        def _row_sort_key(row):
-            title_info_local = info_cache.get(row.title_id) or {}
-            app_info_local = title_info_local if row.app_type == APP_TYPE_BASE else (info_cache.get(row.app_id) or title_info_local)
-            display_name = (
-                app_info_local.get('name')
-                or title_info_local.get('name')
-                or row.app_id
-                or row.title_id
-                or ''
-            )
-            return (
-                str(display_name).lower(),
-                str(row.title_id or ''),
-                str(row.app_id or ''),
-            )
+            def _row_sort_key(row):
+                title_info_local = info_cache.get(row.title_id) or {}
+                app_info_local = title_info_local if row.app_type == APP_TYPE_BASE else (info_cache.get(row.app_id) or title_info_local)
+                display_name = (
+                    app_info_local.get('name')
+                    or title_info_local.get('name')
+                    or row.app_id
+                    or row.title_id
+                    or ''
+                )
+                return (
+                    str(display_name).lower(),
+                    str(row.title_id or ''),
+                    str(row.app_id or ''),
+                )
 
-        rows_for_sort.sort(key=_row_sort_key, reverse=(sort_key == 'title_desc'))
-        rows = rows_for_sort[start:start + per_page]
+            # always ascending in the cache - title_desc just reverses the cached order below
+            rows_for_sort.sort(key=_row_sort_key)
+            ordered_pks = [row.app_pk for row in rows_for_sort]
+            _store_titles_sorted(count_cache_key, ordered_pks)
+
+        total = len(ordered_pks)
+        page_pks = ordered_pks[::-1] if sort_key == 'title_desc' else ordered_pks
+        page_pks = page_pks[start:start + per_page]
+        if page_pks:
+            page_rows_by_pk = {row.app_pk: row for row in query.filter(Apps.id.in_(page_pks)).all()}
+            rows = [page_rows_by_pk[pk] for pk in page_pks if pk in page_rows_by_pk]
+        else:
+            rows = []
     else:
         rows = query.offset(start).limit(per_page).all()
 
@@ -6628,13 +6682,15 @@ def get_all_titles_api():
             'release_date': 'Unknown',
         })
 
-    if not use_name_sort:
-        all_lookup_ids.update([tid for tid in title_id_by_fk.values() if tid])
-        all_lookup_ids.update([aid for aid in dlc_app_ids if aid])
-        with titles.titledb_session() as titledb_loaded:
-            if titledb_loaded:
-                for lookup_id in all_lookup_ids:
-                    info_cache[lookup_id] = titles.get_game_info(lookup_id) or {}
+    # Covers both branches: the not-use_name_sort case always needs this, and the
+    # use_name_sort cache-hit case does too, since info_cache is only pre-populated
+    # for the full set on a cache miss (see above). Redundant but cheap on a miss.
+    all_lookup_ids.update([tid for tid in title_id_by_fk.values() if tid])
+    all_lookup_ids.update([aid for aid in dlc_app_ids if aid])
+    with titles.titledb_session() as titledb_loaded:
+        if titledb_loaded:
+            for lookup_id in all_lookup_ids:
+                info_cache[lookup_id] = titles.get_game_info(lookup_id) or {}
 
     with titles.titledb_session() as titledb_loaded:
         if titledb_loaded:
