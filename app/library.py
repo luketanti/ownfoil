@@ -181,6 +181,14 @@ def remove_library_complete(app, watcher, path):
         return success, errors
 
 def init_libraries(app, watcher, paths):
+    # watcher.add_directory() does one inotify_add_watch() syscall per directory in the tree -
+    # on a large NFS-backed library (thousands of directories) that's minutes of blocking I/O.
+    # This function used to run entirely synchronously inside init(), before waitress opened its
+    # port, so a slow library meant the app was unreachable (and its startupProbe was fighting
+    # the clock) on every single restart. The DB bookkeeping below is cheap (plain inserts), so
+    # keep that synchronous - it has to finish before the scheduler's startup scan job runs, or
+    # that job finds no registered libraries and does nothing until its next interval. Only the
+    # actual watchdog registration is deferred to a background thread.
     with app.app_context():
         # delete non existing libraries
         for library in get_libraries():
@@ -190,17 +198,17 @@ def init_libraries(app, watcher, paths):
                 # Use the complete removal function for consistency
                 remove_library_complete(app, watcher, path)
 
-        # add libraries and start watchdog
+        # add libraries to the database
         for path in paths:
             # Check if library already exists in database
             existing_library = Libraries.query.filter_by(path=path).first()
             if not existing_library:
-                # add library paths to watchdog if necessary
-                watcher.add_directory(path)
                 add_library(path)
-            else:
-                # Ensure watchdog is monitoring existing library
-                watcher.add_directory(path)
+
+    def _register_watchdog_directories():
+        for path in paths:
+            watcher.add_directory(path)
+    threading.Thread(target=_register_watchdog_directories, daemon=True).start()
 
 def add_files_to_library(library, files, check_existing=True):
     nb_to_identify = len(files)
